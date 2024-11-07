@@ -1,5 +1,25 @@
 from models import AddressBook, Record
+import pickle
+from pathlib import Path
 
+def save_address_book(book: AddressBook, filename="address_book.pkl"):
+    """Save the address book to a file using pickle serialization."""
+    try:
+        with open(filename, "wb") as file:
+            pickle.dump(book, file)
+    except Exception as e:
+        print(f"Error saving address book: {e}")
+
+def load_address_book(filename="address_book.pkl") -> AddressBook:
+    """Load the address book from a file using pickle deserialization."""
+    if Path(filename).exists():
+        try:
+            with open(filename, "rb") as file:
+                return pickle.load(file)
+        except Exception as e:
+            print(f"Error loading address book: {e}")
+            return AddressBook()
+    return AddressBook()
 
 def input_error(func):
     def wrapper(*args, **kwargs):
@@ -18,8 +38,6 @@ def input_error(func):
 
 @input_error
 def add_contact(args, book: AddressBook):
-    print(f"Received args: {args}")
-
     if len(args) != 2:
         raise ValueError("Give me name and phone please")
 
@@ -135,14 +153,12 @@ def show_help():
 def parse_input(user_input):
     try:
         cmd, *args = user_input.strip().split()
-        print(f"Command: {cmd}, Args: {args}")
         return cmd.lower(), args
     except ValueError:
         return "help", []
 
-
 def main():
-    book = AddressBook()
+    book = load_address_book()
     print("Welcome to the assistant bot!")
     print("Type 'help' to see available commands")
 
@@ -164,12 +180,14 @@ def main():
             command, args = parse_input(user_input)
 
             if command in ["close", "exit"]:
+                save_address_book(book)
                 print("Good bye!")
                 break
 
             if command in commands:
                 result = commands[command](args)
                 print(result)
+                save_address_book(book)
             else:
                 print("Invalid command. Type 'help' to see available commands.")
         except Exception as e:
